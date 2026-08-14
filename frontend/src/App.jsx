@@ -70,10 +70,11 @@ function normalizeParticipants(items) {
 }
 
 function makeReel(participants, winner) {
-  const pool = participants.length ? participants.map(({ username }) => username) : [winner];
+  const selectedParticipant = participants.find(({ username }) => username.toLocaleLowerCase() === winner.toLocaleLowerCase()) || { username: winner, source: 'kick' };
+  const pool = participants.length ? participants : [selectedParticipant];
   // Каждый круг перемешан отдельно: барабан не повторяет порядок списка.
   const rounds = Array.from({ length: 6 }, () => shuffle(pool)).flat();
-  return { items: [...rounds, winner, ...pool.slice(0, 3)], targetIndex: rounds.length };
+  return { items: [...rounds, selectedParticipant, ...pool.slice(0, 3)], targetIndex: rounds.length, selectedParticipant };
 }
 
 export default function App() {
@@ -81,6 +82,7 @@ export default function App() {
   const [participants, setParticipants] = useState([]);
   const [status, setStatus] = useState('stopped');
   const [winner, setWinner] = useState('');
+  const [winnerSource, setWinnerSource] = useState('kick');
   const [winnerPhase, setWinnerPhase] = useState('idle');
   const [expiresAt, setExpiresAt] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(WINNER_CONFIRMATION_SECONDS);
@@ -128,8 +130,8 @@ export default function App() {
 
   const playSound = useCallback((sound) => {
     if (sound === 'roll') {
-      playTone(115, 3.25, { end: 245, type: 'triangle', volume: 0.025 });
-      for (let index = 0; index < 20; index += 1) {
+      playTone(115, 9.7, { end: 245, type: 'triangle', volume: 0.025 });
+      for (let index = 0; index < 58; index += 1) {
         playTone(180 + (index % 3) * 28, 0.06, {
           start: index * 0.16,
           end: 120 + (index % 2) * 25,
@@ -163,6 +165,7 @@ export default function App() {
     playSound('roll');
     setReel(nextReel);
     setWinner('');
+    setWinnerSource(nextReel.selectedParticipant.source);
     setWinnerPhase('rolling');
     setReelOffset(0);
     setReelRolling(true);
@@ -176,7 +179,7 @@ export default function App() {
     });
 
     if (reelTimer.current) clearTimeout(reelTimer.current);
-    reelTimer.current = setTimeout(() => setReelRolling(false), 3_600);
+    reelTimer.current = setTimeout(() => setReelRolling(false), 10_100);
   }, [playSound]);
 
   const refreshParticipants = useCallback(async () => {
@@ -196,6 +199,7 @@ export default function App() {
       if (data.winner) {
         setWinnerPhase(data.winner.phase);
         setWinner(data.winner.winner || '');
+        setWinnerSource(participantsRef.current.find(({ username }) => username.toLocaleLowerCase() === (data.winner.winner || '').toLocaleLowerCase())?.source || 'kick');
         setExpiresAt(data.winner.expiresAt || null);
       }
     } catch (error) {
@@ -214,6 +218,7 @@ export default function App() {
     socket.on('winner_selected', ({ winner: selectedWinner, expiresAt: nextExpiresAt }) => {
       playSound('winner');
       setWinner(selectedWinner);
+      setWinnerSource(participantsRef.current.find(({ username }) => username.toLocaleLowerCase() === selectedWinner.toLocaleLowerCase())?.source || 'kick');
       setWinnerPhase('awaiting_confirmation');
       setExpiresAt(nextExpiresAt);
       setNotice(`${selectedWinner}, напиши любое сообщение в чат за 45 секунд`);
@@ -235,6 +240,7 @@ export default function App() {
     socket.on('winner_state', (nextWinnerState) => {
       setWinnerPhase(nextWinnerState.phase);
       setWinner(nextWinnerState.winner || '');
+      setWinnerSource(participantsRef.current.find(({ username }) => username.toLocaleLowerCase() === (nextWinnerState.winner || '').toLocaleLowerCase())?.source || 'kick');
       setExpiresAt(nextWinnerState.expiresAt || null);
     });
     socket.on('status_update', (nextStatus) => {
@@ -324,6 +330,7 @@ export default function App() {
       const data = await request('/api/raffle/clear', { method: 'DELETE' });
       setParticipants([]);
       setWinner('');
+      setWinnerSource('kick');
       setWinnerPhase('idle');
       setNotice(data.message);
     });
@@ -333,6 +340,21 @@ export default function App() {
   const drawLocked = ['rolling', 'awaiting_confirmation'].includes(winnerPhase);
   const statusLabel = statusLabels[status] || status;
   const winnerLabel = winnerLabels[winnerPhase] || winnerPhase;
+
+  function renderReelWindow(className = '') {
+    return (
+      <div className={`reel-window ${className}`}>
+        <div className="reel-marker" />
+        <div className={`reel-track ${reelRolling ? 'reel-track-moving' : ''}`} style={{ transform: `translate3d(0, ${reelOffset}px, 0)` }}>
+          {reel.items.map((participant, index) => (
+            <div className={`reel-row username-${participant.source}`} key={`${participant.username}-${index}`}>
+              {participant.username}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="app-shell">
@@ -402,14 +424,9 @@ export default function App() {
             <div className="winner-display" aria-live="polite">
               <div className="winner-glow" />
               {winnerPhase === 'rolling' ? (
-                <div className="reel-window">
-                  <div className="reel-marker" />
-                  <div className={`reel-track ${reelRolling ? 'reel-track-moving' : ''}`} style={{ transform: `translate3d(0, ${reelOffset}px, 0)` }}>
-                    {reel.items.map((name, index) => <div className="reel-row" key={`${name}-${index}`}>{name}</div>)}
-                  </div>
-                </div>
+                <div className="rolling-placeholder"><span>Барабан запущен</span><strong>Смотрим, кому улыбнётся удача</strong></div>
               ) : (
-                <div className="winner-name">{winner || '—'}</div>
+                <div className={`winner-name username-${winnerSource}`}>{winner || '—'}</div>
               )}
             </div>
 
@@ -427,11 +444,10 @@ export default function App() {
 
           <section className="participants-card">
             <div className="participants-head"><div><p className="section-label">В прямом эфире</p><h3>Участники</h3></div><span className="count-badge">{participants.length}</span></div>
-            <div className="list-caption"><span>Никнейм</span><span className="source-legend"><i className="source-indicator source-kick" /> Kick <i className="source-indicator source-wtv" /> W.TV</span><span>№</span></div>
+            <div className="list-caption"><span>Никнейм</span><span className="source-legend"><b className="username-kick">Kick</b><b className="username-wtv">W.TV</b></span><span>№</span></div>
             <ol className="participants-list" aria-live="polite">
               {participants.length === 0 ? <li className="empty"><span>✦</span><p>Пока пусто</p><small>Запусти розыгрыш и жди сообщения с ключевым словом</small></li> : participants.map((participant, index) => {
-                const sourceName = participant.source === 'wtv' ? 'W.TV' : 'Kick';
-                return <li key={participant.username}><span className="participant-number">{String(index + 1).padStart(2, '0')}</span><strong>{participant.username}</strong><span className={`source-indicator source-${participant.source}`} title={`Источник: ${sourceName}`} aria-label={`Источник: ${sourceName}`} /><button className="remove-participant" type="button" onClick={() => removeParticipant(participant)} disabled={busy} title={`Удалить ${participant.username}`} aria-label={`Удалить ${participant.username}`}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-2h4l1 2m-9 0 1 13h8l1-13" /></svg></button></li>;
+                return <li key={participant.username}><span className="participant-number">{String(index + 1).padStart(2, '0')}</span><strong className={`username-${participant.source}`}>{participant.username}</strong><button className="remove-participant" type="button" onClick={() => removeParticipant(participant)} disabled={busy} title={`Удалить ${participant.username}`} aria-label={`Удалить ${participant.username}`}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7l1-2h4l1 2m-9 0 1 13h8l1-13" /></svg></button></li>;
               })}
             </ol>
           </section>
@@ -442,6 +458,30 @@ export default function App() {
           <button className="clear-button" type="button" onClick={clearList} disabled={busy || participants.length === 0}>Очистить список <span>⌫</span></button>
           {notice && <span className="notice" role="status">{notice}</span>}
         </footer>
+
+        {winnerPhase === 'rolling' && (
+          <div className="roll-overlay" role="dialog" aria-modal="true" aria-label="Выбор победителя">
+            <div className="roll-modal">
+              <div className="roll-modal-kicker">Kick - Nebedolagy</div>
+              <h2>Крутим барабан</h2>
+              <p>Победитель появится через несколько секунд</p>
+              {renderReelWindow('reel-window-modal')}
+              <div className="roll-progress"><span /></div>
+            </div>
+          </div>
+        )}
+
+        {winnerPhase === 'awaiting_confirmation' && (
+          <div className="winner-overlay" role="dialog" aria-modal="true" aria-label="Подтверждение победителя">
+            <div className="winner-modal">
+              <div className="winner-modal-spark">✦</div>
+              <p className="roll-modal-kicker">Победитель выбран</p>
+              <h2 className={`winner-modal-name username-${winnerSource}`}>{winner}</h2>
+              <div className="winner-countdown"><strong>{remainingSeconds}</strong><span>секунд<br />на сообщение в чате</span></div>
+              <p className="winner-modal-hint">Напиши любое сообщение в Kick или W.TV, чтобы забрать приз</p>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );

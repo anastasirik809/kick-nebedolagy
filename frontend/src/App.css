@@ -77,3 +77,49 @@ input::placeholder { color: #514f49; }
 @keyframes pulse { 50% { opacity: .26; transform: scale(1.12); } } @keyframes winner-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } } @keyframes reel-card-pulse { 50% { transform: scale(1.006); } } @keyframes marker-glow { 50% { box-shadow: inset 0 0 30px rgb(199 255 71 / 15%), 0 0 34px rgb(199 255 71 / 28%); } } @keyframes winner-glow-pop { from { transform: scale(.5); opacity: .08; } to { transform: scale(1.4); opacity: .3; } }
 @media (max-width: 760px) { .app-shell { padding: 22px 13px; }.hero-header { margin-bottom: 38px; }.hero-copy { align-items: start; flex-direction: column; }.hero-note { padding: 0; text-align: left; }.content-grid { grid-template-columns: 1fr; }.winner-card, .participants-card { min-height: auto; }.participants-card { min-height: 390px; } }
 @media (max-width: 540px) { .setup-card, .winner-card, .participants-card { padding: 18px; border-radius: 14px; }.raffle-form { grid-template-columns: 1fr; }.actions { grid-column: auto; }.button-primary { width: 165px; }.hero-copy h2 { font-size: 43px; }.section-heading, .winner-card-head { align-items: start; flex-direction: column; }.phase-label { padding-left: 23px; }.dashboard-footer { align-items: start; flex-wrap: wrap; gap: 10px; }.clear-button { margin-left: 0; }.notice { position: static; width: 100%; max-width: 100%; text-align: left; } }
+
+/* Source is communicated by the nickname color itself, without extra dots. */
+.username-kick { color: #c7ff47 !important; text-shadow: 0 0 14px rgb(199 255 71 / 18%); }
+.username-wtv { color: #b68cff !important; text-shadow: 0 0 14px rgb(171 131 255 / 22%); }
+.source-legend { gap: 12px; font-size: 8px; }
+.source-legend b { font-weight: 600; }
+.participants-list strong { font-weight: 700; }
+.rolling-placeholder { position: relative; z-index: 1; display: grid; gap: 9px; place-items: center; color: #c7ff47; text-align: center; animation: winner-in .6s ease both; }
+.rolling-placeholder span { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+.rolling-placeholder strong { color: #a9a69b; font-size: 13px; font-weight: 500; }
+
+.roll-overlay, .winner-overlay { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(5 6 5 / 84%); backdrop-filter: blur(10px); animation: overlay-in .35s ease both; }
+.roll-modal, .winner-modal { position: relative; width: min(920px, 100%); overflow: hidden; border: 1px solid #566a30; border-radius: 24px; padding: 30px 34px 28px; background: radial-gradient(circle at 50% 35%, #29341c 0, #191b16 45%, #111210 100%); box-shadow: 0 30px 100px rgb(0 0 0 / 65%), 0 0 80px rgb(199 255 71 / 12%); text-align: center; }
+.roll-modal::before, .winner-modal::before { position: absolute; top: -120px; left: 50%; width: 300px; height: 220px; border-radius: 50%; background: #c7ff47; filter: blur(90px); opacity: .12; content: ''; transform: translateX(-50%); pointer-events: none; }
+.roll-modal-kicker { position: relative; z-index: 1; margin: 0 0 8px; color: #c7ff47; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
+.roll-modal h2 { position: relative; z-index: 1; margin: 0; color: #f5f4ee; font-size: clamp(28px, 5vw, 48px); letter-spacing: -.06em; }
+.roll-modal > p { position: relative; z-index: 1; margin: 8px 0 15px; color: #8f8d84; font-size: 12px; }
+.reel-window-modal { height: 390px; margin: 8px 0 15px; border: 1px solid #343f24; border-radius: 16px; background: rgb(8 10 7 / 35%); }
+.reel-window-modal .reel-marker { left: 5%; right: 5%; height: 78px; }
+.reel-window-modal .reel-track-moving { transition-duration: 10s; transition-timing-function: cubic-bezier(.08,.72,.08,1); }
+.reel-window-modal .reel-row { height: 72px; font-size: clamp(17px, 2.4vw, 23px); font-weight: 700; }
+.roll-progress { position: relative; height: 5px; overflow: hidden; border-radius: 999px; background: #2e3623; }
+.roll-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: #c7ff47; box-shadow: 0 0 14px #c7ff47; animation: roll-progress 10s linear forwards; }
+
+.winner-overlay { background: rgb(5 6 5 / 78%); }
+.winner-modal { width: min(560px, 100%); border-color: #8061c5; padding: 38px 30px 32px; background: radial-gradient(circle at 50% 34%, #35254c 0, #1d1923 44%, #111210 100%); box-shadow: 0 30px 100px rgb(0 0 0 / 75%), 0 0 90px rgb(171 131 255 / 17%); animation: winner-modal-in .55s cubic-bezier(.16, 1, .3, 1) both; }
+.winner-modal::before { background: #ab83ff; opacity: .18; }
+.winner-modal-spark { position: relative; z-index: 1; margin-bottom: 8px; color: #d2baff; font-size: 29px; animation: spark-pop .8s ease both; }
+.winner-modal-name { position: relative; z-index: 1; margin: 5px 0 25px; overflow-wrap: anywhere; font-size: clamp(38px, 8vw, 72px); font-weight: 800; letter-spacing: -.08em; animation: winner-in .65s .1s cubic-bezier(.2,.9,.25,1.2) both; }
+.winner-countdown { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 14px; margin-bottom: 21px; border: 1px solid #725a32; border-radius: 15px; padding: 12px 22px; background: rgb(34 28 20 / 80%); box-shadow: 0 0 30px rgb(245 193 90 / 10%); animation: countdown-in .6s .18s ease both; }
+.winner-countdown strong { color: #f6cf73; font-family: 'DM Mono', monospace; font-size: clamp(42px, 8vw, 66px); line-height: .85; }
+.winner-countdown span { color: #c2a972; font-size: 11px; line-height: 1.35; text-align: left; }
+.winner-modal-hint { position: relative; z-index: 1; margin: 0; color: #aaa2b5; font-size: 12px; line-height: 1.55; }
+
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes winner-modal-in { from { opacity: 0; transform: translateY(22px) scale(.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes countdown-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
+@keyframes spark-pop { from { opacity: 0; transform: scale(.2) rotate(-30deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes roll-progress { from { width: 0; } to { width: 100%; } }
+
+@media (max-width: 600px) {
+  .roll-overlay, .winner-overlay { padding: 10px; }
+  .roll-modal, .winner-modal { border-radius: 18px; padding: 24px 15px 20px; }
+  .reel-window-modal { height: 330px; }
+  .winner-countdown { padding: 10px 17px; }
+}

@@ -4,7 +4,7 @@ import WebSocket from 'ws';
 import { config } from './config.js';
 import { addParticipant, drawParticipant, getParticipants } from './database.js';
 
-const ROLL_DURATION_MS = 3_500;
+const ROLL_DURATION_MS = 10_000;
 const WINNER_CONFIRMATION_MS = 45_000;
 
 // One module-level record ensures this backend maintains a single live raffle.
