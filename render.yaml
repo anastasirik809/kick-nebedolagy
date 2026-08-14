@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: kick-nebedolagy
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SQLITE_FILE
+        value: ./raffle.sqlite
