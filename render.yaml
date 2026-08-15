@@ -11,3 +11,9 @@ services:
         value: production
       - key: SQLITE_FILE
         value: ./raffle.sqlite
+      - key: ADMIN_LOGIN
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        sync: false

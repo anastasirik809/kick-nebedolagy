@@ -37,6 +37,16 @@ A full-stack giveaway dashboard for Nebedolagy. The dashboard keeps the Kick cha
 
 The backend runs at `http://localhost:5000`. Vite proxies `/api` and `/socket.io` to it in development.
 
+## Dashboard authentication
+
+The dashboard is protected by a server-side login. Credentials are never included in the React bundle, API responses, or GitHub source. Generate a 12-character login and password locally:
+
+```bash
+npm run auth:generate --workspace backend
+```
+
+Copy `ADMIN_LOGIN`, `ADMIN_PASSWORD_HASH`, and `SESSION_SECRET` into Render → Environment. Keep the printed `ADMIN_PASSWORD` private; it is the password you enter on the login page, but it does not need to be stored in Render when `ADMIN_PASSWORD_HASH` is set. For local development, put the same variables in `backend/.env` (never commit that file).
+
 ## Deploy to Render
 
 The repository includes `render.yaml` for a single Render Web Service. Upload/connect the entire repository root (the folder containing `package.json`, `backend/`, `frontend/`, and `render.yaml`) to GitHub, then in Render choose **New → Blueprint** and select that repository. Render will use:

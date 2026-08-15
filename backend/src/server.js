@@ -6,6 +6,7 @@ import cors from 'cors';
 import express from 'express';
 import { Server } from 'socket.io';
 import { config } from './config.js';
+import { createAuth } from './auth.js';
 import {
   clearAllParticipants,
   closeDatabase,
@@ -23,6 +24,7 @@ const io = new Server(server, {
   }
 });
 const raffleService = createRaffleService(io);
+const auth = createAuth(config);
 const backendSourceDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(backendSourceDirectory, '../..');
 const frontendDistDirectory = path.join(projectDirectory, 'frontend', 'dist');
@@ -38,6 +40,15 @@ app.get('/api/raffle/status', (_req, res) => {
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'kick-nebedolagy' });
 });
+
+app.post('/api/auth/login', (req, res) => auth.loginUser(req, res));
+app.post('/api/auth/logout', (req, res) => auth.logoutUser(req, res));
+app.get('/api/auth/session', (req, res) => {
+  if (!auth.isConfigured()) return res.status(503).json({ error: 'Авторизация не настроена на сервере' });
+  return res.json({ authenticated: Boolean(auth.getSession(req)) });
+});
+
+app.use('/api/raffle', auth.requireAuth);
 
 app.post('/api/raffle/start', async (req, res) => {
   try {
@@ -101,6 +112,11 @@ if (existsSync(frontendDistDirectory)) {
     return res.sendFile(frontendIndexFile);
   });
 }
+
+io.use((socket, next) => {
+  if (auth.socketIsAuthorized(socket)) return next();
+  return next(new Error('Требуется вход в аккаунт'));
+});
 
 io.on('connection', (socket) => {
   socket.emit('participants_update', { participants: getParticipants() });

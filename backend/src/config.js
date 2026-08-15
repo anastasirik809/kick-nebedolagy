@@ -9,6 +9,12 @@ dotenv.config({ path: path.join(backendDirectory, '.env') });
 export const config = {
   port: Number(process.env.PORT || 5000),
   clientOrigin: process.env.CLIENT_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173',
+  auth: {
+    login: process.env.ADMIN_LOGIN || '',
+    password: process.env.ADMIN_PASSWORD || '',
+    passwordHash: process.env.ADMIN_PASSWORD_HASH || '',
+    sessionSecret: process.env.SESSION_SECRET || ''
+  },
   streamerChannel: process.env.STREAMER_CHANNEL || 'nebedolagy',
   wtv: {
     channelUrl: process.env.WTV_CHANNEL_URL || 'https://w.tv/bedolagy',

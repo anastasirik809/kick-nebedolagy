@@ -27,6 +27,7 @@ const winnerLabels = {
 async function request(path, options = {}) {
   const response = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     ...options
   });
   const payload = await response.json();
@@ -77,7 +78,7 @@ function makeReel(participants, winner) {
   return { items: [...rounds, selectedParticipant, ...pool.slice(0, 3)], targetIndex: rounds.length, selectedParticipant };
 }
 
-export default function App() {
+function DashboardApp({ onLogout }) {
   const [keyword, setKeyword] = useState('!giveaway');
   const [participants, setParticipants] = useState([]);
   const [status, setStatus] = useState('stopped');
@@ -373,6 +374,7 @@ export default function App() {
             <i />
             {statusLabel}
           </div>
+          <button className="logout-button" type="button" onClick={onLogout}>Выйти</button>
         </header>
 
         <div className="hero-copy">
@@ -485,4 +487,76 @@ export default function App() {
       </section>
     </main>
   );
+}
+
+function LoginPage({ onAuthenticated, serverError = '' }) {
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(serverError);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ login, password })
+      });
+      onAuthenticated();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="auth-shell">
+      <div className="auth-orb auth-orb-one" />
+      <div className="auth-orb auth-orb-two" />
+      <form className="auth-card" onSubmit={submit}>
+        <div className="auth-mark">K<span>×</span>N</div>
+        <p className="auth-kicker">закрытая панель стримера</p>
+        <h1>Kick <span>- Nebedolagy</span></h1>
+        <p className="auth-subtitle">Войди, чтобы открыть управление розыгрышем.</p>
+        <label><span>Логин</span><input value={login} onChange={(event) => setLogin(event.target.value)} autoComplete="username" placeholder="Введите логин" disabled={busy} /></label>
+        <label><span>Пароль</span><input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" placeholder="Введите пароль" disabled={busy} /></label>
+        {error && <p className="auth-error" role="alert">{error}</p>}
+        <button className="auth-submit" type="submit" disabled={busy || !login || !password}>{busy ? 'Проверяем…' : 'Войти в панель'}<b>↗</b></button>
+      </form>
+    </main>
+  );
+}
+
+export default function App() {
+  const [authState, setAuthState] = useState('checking');
+  const [serverError, setServerError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/auth/session', { credentials: 'include' })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Не удалось проверить авторизацию');
+        setAuthState(payload.authenticated ? 'authenticated' : 'unauthenticated');
+      })
+      .catch((error) => {
+        setServerError(error.message);
+        setAuthState('unauthenticated');
+      });
+  }, []);
+
+  async function logout() {
+    await request('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    setAuthState('unauthenticated');
+  }
+
+  if (authState === 'checking') {
+    return <main className="auth-shell auth-loading"><div className="auth-loader">Открываем панель…</div></main>;
+  }
+  if (authState === 'unauthenticated') {
+    return <LoginPage serverError={serverError} onAuthenticated={() => { setServerError(''); setAuthState('authenticated'); }} />;
+  }
+  return <DashboardApp onLogout={logout} />;
 }
